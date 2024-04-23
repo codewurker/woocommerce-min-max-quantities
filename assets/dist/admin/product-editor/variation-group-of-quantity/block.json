@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "woocommerce-min-max/variation-group-of-quantity-field",
+  "version": "0.1.0",
+  "title": "Sell in groups of",
+  "category": "widgets",
+  "icon": "flag",
+  "description": "Sell in groups of",
+  "attributes": {
+    "label": {
+      "type": "string",
+      "__experimentalRole": "content"
+    }
+  },
+  "supports": {
+    "html": false,
+    "inserter": false
+  },
+  "textdomain": "woocommerce-min-max-quantities",
+  "editorScript": "file:./index.js",
+  "usesContext": [
+    "postType"
+  ]
+}
