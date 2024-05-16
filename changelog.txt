@@ -1,5 +1,9 @@
 *** Woo Min/Max Quantities Changelog ***
 
+2024.05.15 - version 4.3.1
+* Fix - Resolved an issue in the REST API that returned a cached 'Group of' value.
+* Fix - Resolved a fatal error triggered by the REST API when trying to set a 'Group of' value with an empty Min/Max Quantity.
+
 2024.04.16 - version 4.3.0
 * New - Added REST API support.
 

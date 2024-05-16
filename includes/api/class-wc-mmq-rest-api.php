@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Add custom REST API fields.
  *
  * @class    WC_MMQ_REST_API
- * @version  4.3.0
+ * @version  4.3.1
  */
 class WC_MMQ_REST_API {
 
@@ -128,6 +128,9 @@ class WC_MMQ_REST_API {
 		if ( isset( $request[ 'group_of_quantity' ] ) ) {
 			$variation->update_meta_data( 'variation_group_of_quantity', (int) wc_clean( $request[ 'group_of_quantity' ] ) );
 			$variation->save();
+
+			// Increments the transient version to invalidate cache.
+			WC_Cache_Helper::get_transient_version( 'wc_min_max_group_quantity', true );
 		}
 
 		if ( isset( $request[ 'min_quantity' ] ) ) {
@@ -365,6 +368,9 @@ class WC_MMQ_REST_API {
 				$product->update_meta_data( 'group_of_quantity', (int) wc_clean( $field_value ) );
 				$product->save();
 
+				// Increments the transient version to invalidate cache.
+				WC_Cache_Helper::get_transient_version( 'wc_min_max_group_quantity', true );
+
 			// Set minimum quantity.
 			} elseif ( 'min_quantity' === $field_name ) {
 
@@ -378,7 +384,7 @@ class WC_MMQ_REST_API {
 					throw new WC_REST_Exception( 'woocommerce_rest_invalid_max_quantity', sprintf( __( 'The minimum quantity must be less than %d, which is the Maximum Quantity.', 'woocommerce-min-max-quantities' ), $max_quantity ), 400 );
 				}
 
-				if ( $group_of_rule && ( 0 !== $min_quantity % $group_of_rule ) ) {
+				if ( $group_of_rule && ( ( 0 !== $min_quantity % $group_of_rule ) || 0 === $min_quantity ) ) {
 					/* translators: Group of quantity */
 					throw new WC_REST_Exception( 'woocommerce_rest_invalid_min_quantity', sprintf( __( 'The minimum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
 				}
@@ -394,12 +400,12 @@ class WC_MMQ_REST_API {
 				$min_quantity  = $product->get_meta( 'minimum_allowed_quantity', true );
 				$max_quantity  = wc_clean( $field_value );
 
-				if ( $min_quantity && $max_quantity < $min_quantity ) {
+				if ( $min_quantity && $max_quantity && $max_quantity < $min_quantity ) {
 					/* translators: Minimum quantity */
 					throw new WC_REST_Exception( 'woocommerce_rest_invalid_max_quantity', sprintf( __( 'The maximum quantity must be greater than %d, which is the Minimum Quantity.', 'woocommerce-min-max-quantities' ), $min_quantity ), 400 );
 				}
 
-				if ( $group_of_rule && ( 0 !== $max_quantity % $group_of_rule ) ) {
+				if ( $group_of_rule && '' !== $max_quantity && ( 0 !== $max_quantity % $group_of_rule ) ) {
 					/* translators: Group of quantity */
 					throw new WC_REST_Exception( 'woocommerce_rest_invalid_max_quantity', sprintf( __( 'The maximum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
 				}
