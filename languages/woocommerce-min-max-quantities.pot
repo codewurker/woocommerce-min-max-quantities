@@ -2,14 +2,14 @@
 # This file is distributed under the GNU General Public License v3.0.
 msgid ""
 msgstr ""
-"Project-Id-Version: Woo Min/Max Quantities 4.3.1\n"
+"Project-Id-Version: Woo Min/Max Quantities 4.3.2\n"
 "Report-Msgid-Bugs-To: https://woocommerce.com/my-account/create-a-ticket/\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-05-15T12:22:54+00:00\n"
+"POT-Creation-Date: 2024-06-04T09:20:25+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "language-team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -244,80 +244,75 @@ msgstr ""
 msgid "Support"
 msgstr ""
 
-#. translators: Group of quantity
-#: includes/api/class-wc-mmq-rest-api.php:143
-#: includes/api/class-wc-mmq-rest-api.php:389
-msgid "The minimum quantity must be a multiple of %d."
-msgstr ""
-
-#. translators: Minimum quantity
-#: includes/api/class-wc-mmq-rest-api.php:160
-#: includes/api/class-wc-mmq-rest-api.php:405
-msgid "The maximum quantity must be greater than %d, which is the Minimum Quantity."
-msgstr ""
-
-#. translators: Group of quantity
-#: includes/api/class-wc-mmq-rest-api.php:165
-#: includes/api/class-wc-mmq-rest-api.php:410
-msgid "The maximum quantity must be a multiple of %d."
-msgstr ""
-
-#: includes/api/class-wc-mmq-rest-api.php:184
-#: includes/api/class-wc-mmq-rest-api.php:432
+#: includes/api/class-wc-mmq-rest-api.php:159
+#: includes/api/class-wc-mmq-rest-api.php:483
 msgid "The Allow Combinations option can only be set for Variable Products."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:199
+#. translators: Minimum quantity
+#: includes/api/class-wc-mmq-rest-api.php:186
+#: includes/api/class-wc-mmq-rest-api.php:510
+msgid "The minimum quantity must be less than %d, which is the Maximum Quantity."
+msgstr ""
+
+#. translators: Group of quantity
+#: includes/api/class-wc-mmq-rest-api.php:191
+#: includes/api/class-wc-mmq-rest-api.php:515
+msgid "The minimum quantity must be a multiple of %d."
+msgstr ""
+
+#. translators: Group of quantity
+#: includes/api/class-wc-mmq-rest-api.php:196
+#: includes/api/class-wc-mmq-rest-api.php:520
+msgid "The maximum quantity must be a multiple of %d."
+msgstr ""
+
+#: includes/api/class-wc-mmq-rest-api.php:253
 msgid "Enable this option to set quantity rules for a specific variation."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:205
+#: includes/api/class-wc-mmq-rest-api.php:259
 msgid "Require variations to be purchased in multiples of this value."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:210
+#: includes/api/class-wc-mmq-rest-api.php:264
 msgid "Minimum required variation quantity."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:215
+#: includes/api/class-wc-mmq-rest-api.php:269
 msgid "Maximum allowed variation quantity."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:220
+#: includes/api/class-wc-mmq-rest-api.php:274
 msgid "Exclude variation from order quantity and value rules."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:226
+#: includes/api/class-wc-mmq-rest-api.php:280
 msgid "Exclude variation from category quantity rules."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:271
+#: includes/api/class-wc-mmq-rest-api.php:322
 msgid "Require products to be purchased in multiples of this value."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:276
+#: includes/api/class-wc-mmq-rest-api.php:327
 msgid "Minimum required product quantity."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:281
+#: includes/api/class-wc-mmq-rest-api.php:332
 msgid "Maximum allowed product quantity."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:286
+#: includes/api/class-wc-mmq-rest-api.php:337
 msgid "Exclude product from order quantity and value rules."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:292
+#: includes/api/class-wc-mmq-rest-api.php:343
 msgid "Exclude product from category quantity rules."
 msgstr ""
 
-#: includes/api/class-wc-mmq-rest-api.php:298
+#: includes/api/class-wc-mmq-rest-api.php:349
 msgid "Enable this option to combine the quantities of all purchased variations when checking quantity rules."
-msgstr ""
-
-#. translators: Minimum quantity
-#: includes/api/class-wc-mmq-rest-api.php:384
-msgid "The minimum quantity must be less than %d, which is the Maximum Quantity."
 msgstr ""
 
 #: includes/class-wc-min-max-quantities-blocks.php:59
@@ -365,8 +360,8 @@ msgstr ""
 msgid "Enter a maximum quantity customers can buy in a single order. This is particularly useful for items that have limited quantity, like art or handmade goods."
 msgstr ""
 
-#: includes/compatibility/class-wc-min-max-quantities-compatibility.php:65
-#: includes/compatibility/class-wc-min-max-quantities-compatibility.php:74
+#: includes/compatibility/class-wc-min-max-quantities-compatibility.php:66
+#: includes/compatibility/class-wc-min-max-quantities-compatibility.php:75
 msgid "Foul!"
 msgstr ""
 

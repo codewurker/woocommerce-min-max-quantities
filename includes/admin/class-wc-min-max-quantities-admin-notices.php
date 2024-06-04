@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Admin notices handling.
  *
  * @class    WC_Min_Max_Quantities_Admin_Notices
- * @version  4.2.3
+ * @version  4.3.2
  */
 class WC_Min_Max_Quantities_Admin_Notices {
 
@@ -61,9 +61,9 @@ class WC_Min_Max_Quantities_Admin_Notices {
 			$GLOBALS[ 'sw_store' ][ 'notices_unique' ] = array();
 		}
 
-		self::$maintenance_notices = get_option( 'wc_mmq_maintenance_notices', array() );
+		self::$maintenance_notices = is_array( get_option( 'wc_mmq_maintenance_notices' ) ) ? get_option( 'wc_mmq_maintenance_notices' ) : array();
 		self::$dismissed_notices   = get_user_meta( get_current_user_id(), 'wc_mmq_dismissed_notices', true );
-		self::$dismissed_notices   = empty( self::$dismissed_notices ) ? array() : self::$dismissed_notices;
+		self::$dismissed_notices   = is_array( self::$dismissed_notices ) ? self::$dismissed_notices : array();
 
 		// Show meta box notices.
 		add_action( 'admin_notices', array( __CLASS__, 'output_notices' ) );

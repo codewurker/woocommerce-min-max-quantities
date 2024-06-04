@@ -3,7 +3,7 @@
  * Plugin Name: Woo Min/Max Quantities
  * Plugin URI: https://woocommerce.com/products/minmax-quantities/
  * Description: Define minimum/maximum allowed quantities for products, variations and orders.
- * Version: 4.3.1
+ * Version: 4.3.2
  * Author: Woo
  * Author URI: https://woocommerce.com
  * Requires at least: 4.4
@@ -26,7 +26,7 @@
 
 if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 
-	define( 'WC_MIN_MAX_QUANTITIES', '4.3.1' ); // WRCS: DEFINED_VERSION.
+	define( 'WC_MIN_MAX_QUANTITIES', '4.3.2' ); // WRCS: DEFINED_VERSION.
 
 	/**
 	 * Min Max Quantities class.
@@ -1398,6 +1398,8 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 		 * Get group_of_quantity setting for a product.
 		 *
 		 * @param WC_Product $product Product object.
+		 * 
+		 * Doesn't handle variations on variable products.
 		 *
 		 * @return int
 		 */
@@ -1572,6 +1574,182 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 			}
 
 			return absint( $max_quantity );
+		}
+
+		/**
+		 * Check if the product always conforms to MMQ rules.
+		 * 
+		 * That is, there are either no rules set, or the min/max rules are set and equal.
+		 *
+		 * @param WC_Product $product Product object.
+		 *
+		 * @return bool
+		 */
+		private function can_skip_product_rules_validation( $product ) {
+			
+			if ( ! $product ) {
+				return false;
+			}
+
+			$product_min_qty = absint( $product->get_meta( 'minimum_allowed_quantity' ) );
+			$product_max_qty = absint( $product->get_meta( 'maximum_allowed_quantity' ) );
+			$group_of_qty = $this->get_group_of_quantity_for_product( $product );
+
+			// If no min/max rules are set, there's nothing to check -> can skip validation.
+			if ( 1 >= $product_min_qty && 0 === $product_max_qty && 1 >= $group_of_qty ) {
+				return true;
+			}
+
+			// If min and max are set and equal, the product has qty locked -> can skip validation.
+			if ( 0 < $product_min_qty && 0 < $product_max_qty && $product_min_qty === $product_max_qty ) {
+				return true;
+			}
+
+			return false;
+
+		}
+
+		/**
+		 * Check if the variable product supports express checkout.
+		 * 
+		 * Simplified version that is a bit lighter on resources: If there are any variations with min/max rules enabled, return false.
+		 * Variations can have different prices, too. But that's handled outside of this plugin.
+
+		 * 
+		 * @param WC_Product $product Product object.
+		 * 
+		 * @return bool
+		 */
+		private function variable_product_supports_express_checkout( $product ) {
+
+			if ( ! $product ) {
+				return false;
+			}
+
+			if ( ! in_array( $product->get_type(), array( 'variable', 'variable-subscription' ), true ) ) {
+				// This is counterintuitive, but if a non-variable product is passed, 
+				// we shouldn't forbid the express checkout button here.
+				return true;
+			}
+
+			$combine_variations = $product->get_meta( 'allow_combination', true );
+			
+			if ( 'yes' === $combine_variations ) {
+				/* If Combine variations is set to true, there are no rules on the variations.
+					But if min == max on the variable product with combined variations, qty is not set automatically.
+					=> Can't show express checkout. */
+					$product_min_qty = absint( $product->get_meta( 'minimum_allowed_quantity' ) );
+					$product_max_qty = absint( $product->get_meta( 'maximum_allowed_quantity' ) );
+
+					if ( 1 < $product_min_qty && 0 < $product_max_qty && $product_min_qty === $product_max_qty ) {
+
+						return false;
+					}
+			} else {
+				/* If Combine variations is set to false, there might be min/max rules on the variations.
+					=> Check if any variation has them enabled. */
+				$variations = $product->get_children();
+				foreach ( $variations as $variation_id ) {
+					$variation         = wc_get_product( $variation_id );
+					if ( 'yes' === $variation->get_meta( 'min_max_rules', true ) ) {
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
+		/**
+		 * Check if global rules apply to a product.
+		 * 
+		 * That is, if there are any global rules set, and the product is not excluded from them.
+		 * 
+		 * Exclusion from group of rules applied through categories is done in can_skip_product_rules_validation(),
+		 * as get_group_of_quantity_for_product returns 0 if the rule is set, but the product is excluded.
+		 * 
+		 * @since 4.3.2
+		 * @version 4.3.2
+		 * 
+		 * @param WC_Product $product Product object.
+		 * 
+		 * @return bool
+		 */
+		private function global_rules_apply_to_product( $product ) {
+
+			if ( ! $product ) {
+				return false;
+			}
+
+			// If no global rules are set, they don't apply to the product.
+			$min_quantity  = $this->minimum_order_quantity;
+			$max_quantity  = $this->maximum_order_quantity;
+			$min_value     = $this->minimum_order_value;
+			$max_value     = $this->maximum_order_value;
+
+			if ( 1 >= $min_quantity && 0 === $max_quantity && 0 === $min_value && 0 === $max_value ) {
+				return false;
+			}
+
+			// If product is excluded from order min/max quantity/value and category rules, they don't apply.
+			$mmq_exclude       = $product->get_meta( 'minmax_cart_exclude' );
+
+			// If there are any global qty/value rules set and this product is excluded from them, they don't apply.
+			if ( 'yes' === $mmq_exclude && ( 1 < $min_quantity || 0 < $max_quantity || 0 < $min_value || 0 < $max_value ) ) {
+				return false;
+			}
+
+			// Otherwise, rules apply.
+			return true;
+		 }
+
+		/**
+		 * Check if the express checkout button(s) can be displayed on single product page.
+		 * 
+		 * The only thing we can do from PHP is to hide the smart buttons if the min/max quantity or value is set.
+		 * The end customer can increase the quantity and click the express checkout button and only at that point
+		 * we can check if the quantity/value is within the allowed range.
+		 * Since we can't validate this in PHP, we hide the express checkout button.
+		 * 
+		 * @since 4.3.2
+		 * @version 4.3.2
+		 * 
+		 * @param WC_Product $product Product object.
+		 * 
+		 * @return bool
+		 */
+		public function can_display_express_checkout( $product ) {
+
+			/* If global MMQ rules apply to the product, 
+			   we can't verify the quantity/value in PHP, so we can't display the express checkout button. */
+			if ( $this->global_rules_apply_to_product( $product ) ) {
+				return false;
+			}
+
+			/* If the product has rules that need to be validated, 
+			   (and we can't verify the quantity in PHP), we can't display the express checkout button. */
+			if ( ! $this->can_skip_product_rules_validation( $product ) ) {
+				return false;
+			}
+
+			/* If the product is a variable product and there are variations with min/max rules, 
+			   we can't verify the quantity in PHP, so we can't display the express checkout button.
+			   
+			   We can test for variable products after the test for simple products, because all the cases
+			   that are handled incorrectly by product_always_conforms_to_rules() allow this check to run:
+				- if there are no rules on variations, product_always_conforms_to_rules is almost correct for variable products, too.
+				- if there are no rules on variable product, but there are rules on variation 
+				    -> product_always_conforms_to_rules will return true, but this will be corrected to false here.
+				- if min == max on the variable product, but there are rules on the variation
+				    -> product_always_conforms_to_rules will return true, but this will be corrected to false here.
+				- if min == max on the variable product and combine variations is true, qty is not forced,
+				    -> product_always_conforms_to_rules will return true, but this will be corrected to false here. */
+			if ( ! $this->variable_product_supports_express_checkout( $product ) ) {
+				return false;
+			}
+
+			// Otherwise, we allow the express checkout button to be displayed.
+			return true;
 		}
 	}
 

@@ -1,5 +1,11 @@
 *** Woo Min/Max Quantities Changelog ***
 
+2024.06.04 - version 4.3.2
+* Tweak - Updated REST API validation to prevent incompatible quantity rules from being set.
+* Fix - Hide express checkout buttons on Single product page when Min/Max quantity can't be verified.
+* Fix - Resolved a fatal error triggered when trying to get the 'Group of' value of orphaned variations via REST API.
+* Fix - Improved validation of values when getting maintenance and dismissed notices from the DB.
+
 2024.05.15 - version 4.3.1
 * Fix - Resolved an issue in the REST API that returned a cached 'Group of' value.
 * Fix - Resolved a fatal error triggered by the REST API when trying to set a 'Group of' value with an empty Min/Max Quantity.

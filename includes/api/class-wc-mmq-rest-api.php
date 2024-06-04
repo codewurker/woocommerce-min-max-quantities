@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Add custom REST API fields.
  *
  * @class    WC_MMQ_REST_API
- * @version  4.3.1
+ * @version  4.3.2
  */
 class WC_MMQ_REST_API {
 
@@ -42,6 +42,10 @@ class WC_MMQ_REST_API {
 
 		// Filter responses from the variations endpoint.
 		add_action( 'rest_api_init', array( __CLASS__, 'filter_variation_fields' ), 0 );
+
+		// Validates and sets product fields based on PUT/POST REST API requests.
+		add_filter( 'woocommerce_rest_pre_insert_product_object', array( __CLASS__, 'handle_product_update' ), 10, 2 );
+
 	}
 
 	/**
@@ -53,7 +57,7 @@ class WC_MMQ_REST_API {
 		add_filter( 'woocommerce_rest_prepare_product_variation_object', array( __CLASS__, 'filter_product_variation_response' ), 10, 2 );
 
 		// Modify PUT requests for product variations.
-		add_filter( 'woocommerce_rest_pre_insert_product_variation_object', array( __CLASS__, 'set_variation_quantity_rules' ), 10, 2 );
+		add_filter( 'woocommerce_rest_pre_insert_product_variation_object', array( __CLASS__, 'handle_product_variation_update' ), 10, 2 );
 
 		// Add Min/Max Quantities fields to variations schema.
 		add_filter( 'woocommerce_rest_product_variation_schema', array( __CLASS__, 'filter_variation_schema' ) );
@@ -87,6 +91,7 @@ class WC_MMQ_REST_API {
 	 *
 	 * @param  WP_REST_Response   $response
 	 * @param  WC_Data            $product
+	 *
 	 * @return WP_REST_Response
 	 */
 	public static function filter_product_variation_response( $response, $product ) {
@@ -111,77 +116,126 @@ class WC_MMQ_REST_API {
 	 * @since  4.3.0
 	 *
 	 * @param  WC_Product_Variation $variation
-	 * @param  WP_REST_Response     $response
+	 * @param  WP_REST_Request      $request
 	 *
+	 * @return WC_Product_Variation
 	 */
-	public static function set_variation_quantity_rules( $variation, $request ) {
+	public static function handle_product_variation_update( $variation, $request ) {
 
 		if ( ! is_a( $variation, 'WC_Product_Variation' ) ) {
 			return $variation;
 		}
 
+		self::rest_validate_product_variation_quantity_rules( $variation, $request );
+
+		return self::rest_set_product_variation_fields( $variation, $request );
+	}
+
+	/**
+	 * Validates quantity rules in REST API PUT/POST requests.
+	 *
+	 * @since  4.3.2
+	 *
+	 * @throws WC_REST_Exception When invalid quantity rules for variations.
+	 *
+	 * @param  WC_Product_Variation $variation
+	 * @param  WP_REST_Request      $request
+	 *
+	 * @return WC_Product_Variation
+	 */
+	public static function rest_validate_product_variation_quantity_rules( $variation, $request ) {
+
+		// Check if no validation is needed.
+		if ( ! isset( $request[ 'group_of_quantity' ] ) &&
+		     ! isset( $request[ 'min_quantity' ] ) &&
+		     ! isset( $request[ 'max_quantity' ] ) &&
+		     ! isset( $request[ 'combine_variations' ] )
+		) {
+			return $variation;
+		}
+
+		// Validate variation props.
+		if ( isset( $request[ 'combine_variations' ] ) ) {
+			throw new WC_REST_Exception( 'woocommerce_rest_invalid_product_type_allow_combinations', __( 'The Allow Combinations option can only be set for Variable Products.', 'woocommerce-min-max-quantities' ) , 400 );
+		}
+
+		if ( isset( $request[ 'min_quantity' ] ) ) {
+			$min_quantity = (int) $request[ 'min_quantity' ];
+		} else {
+			$min_quantity = '' !== $variation->get_meta( 'variation_minimum_allowed_quantity' )
+				? (int) $variation->get_meta( 'variation_minimum_allowed_quantity' )
+				: '';
+		}
+
+		if ( isset( $request[ 'group_of_quantity' ] ) ) {
+			$group_of_rule = (int) $request[ 'group_of_quantity' ];
+		} else {
+			$group_of_rule = (int) $variation->get_meta( 'variation_group_of_quantity' );
+		}
+
+		if ( isset( $request[ 'max_quantity' ] ) ) {
+			$max_quantity = $request[ 'max_quantity' ];
+		} else {
+			$max_quantity = $variation->get_meta( 'variation_maximum_allowed_quantity' );
+		}
+
+		$max_quantity = $max_quantity ? (int) $max_quantity : '';
+
+		if ( '' !== $max_quantity && '' !== $min_quantity && $max_quantity < $min_quantity ) {
+			/* translators: Minimum quantity */
+			throw new WC_REST_Exception( 'woocommerce_rest_invalid_variation_min_quantity', sprintf( __( 'The minimum quantity must be less than %d, which is the Maximum Quantity.', 'woocommerce-min-max-quantities' ), $max_quantity ), 400 );
+		}
+
+		if ( $group_of_rule && '' !== $min_quantity && ( ( 0 !== $min_quantity % $group_of_rule ) || 0 === $min_quantity ) ) {
+			/* translators: Group of quantity */
+			throw new WC_REST_Exception( 'woocommerce_rest_invalid_variation_min_quantity', sprintf( __( 'The minimum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
+		}
+
+		if ( $group_of_rule && '' !== $max_quantity && ( 0 !== $max_quantity % $group_of_rule ) ) {
+			/* translators: Group of quantity */
+			throw new WC_REST_Exception( 'woocommerce_rest_invalid_variation_max_quantity', sprintf( __( 'The maximum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
+		}
+	}
+
+	/**
+	 * Updates product variation meta data based on quantity rules from REST request.
+	 *
+	 * @since  4.3.2
+	 *
+	 * @param  WC_Product_Variation $variation
+	 * @param  WP_REST_Request      $request
+	 *
+	 * @return WC_Product_Variation
+	 */
+	public static function rest_set_product_variation_fields( $variation, $request ) {
+
 		if ( isset( $request[ 'variation_quantity_rules' ] ) ) {
 			$variation->update_meta_data( 'min_max_rules', wc_clean( $request[ 'variation_quantity_rules' ] ) );
-			$variation->save();
 		}
 
 		if ( isset( $request[ 'group_of_quantity' ] ) ) {
 			$variation->update_meta_data( 'variation_group_of_quantity', (int) wc_clean( $request[ 'group_of_quantity' ] ) );
-			$variation->save();
 
 			// Increments the transient version to invalidate cache.
 			WC_Cache_Helper::get_transient_version( 'wc_min_max_group_quantity', true );
 		}
 
 		if ( isset( $request[ 'min_quantity' ] ) ) {
-
-			$group_of_rule = $variation->get_meta( 'variation_group_of_quantity', true );
-			$min_quantity  = (int) wc_clean( $request[ 'min_quantity' ] );
-
-			if ( $group_of_rule && ( 0 !== $min_quantity % $group_of_rule ) ) {
-				/* translators: Group of quantity */
-				throw new WC_REST_Exception( 'woocommerce_rest_invalid_variation_min_quantity', sprintf( __( 'The minimum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
-			}
-
-			$variation->update_meta_data( 'variation_minimum_allowed_quantity', $min_quantity );
-			$variation->save();
+			$variation->update_meta_data( 'variation_minimum_allowed_quantity', (int) wc_clean( $request[ 'min_quantity' ] ) );
 		}
 
 		if ( isset( $request[ 'max_quantity' ] ) ) {
-
-			$group_of_rule = (int) $variation->get_meta( 'variation_group_of_quantity', true );
-			$min_quantity  = (int) $variation->get_meta( 'variation_minimum_allowed_quantity', true );
-
 			$max_quantity = '' !== wc_clean( $request[ 'max_quantity' ] ) ? (int) wc_clean( $request[ 'max_quantity' ] ) : '';
 
-			if ( '' !== $max_quantity ) {
-				if ( $min_quantity && $max_quantity < $min_quantity ) {
-					/* translators: Minimum quantity */
-					throw new WC_REST_Exception( 'woocommerce_rest_invalid_variation_max_quantity', sprintf( __( 'The maximum quantity must be greater than %d, which is the Minimum Quantity.', 'woocommerce-min-max-quantities' ), $min_quantity ), 400 );
-				}
-
-				if ( $group_of_rule && ( 0 !== $max_quantity % $group_of_rule ) ) {
-					/* translators: Group of quantity */
-					throw new WC_REST_Exception( 'woocommerce_rest_invalid_variation_max_quantity', sprintf( __( 'The maximum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
-				}
-			}
-
 			$variation->update_meta_data( 'variation_maximum_allowed_quantity', $max_quantity );
-			$variation->save();
 		}
 
 		if ( isset( $request[ 'exclude_order_quantity_value_rules' ] ) ) {
 			$variation->update_meta_data( 'variation_minmax_cart_exclude', wc_clean( $request[ 'exclude_order_quantity_value_rules' ] ) );
-			$variation->save();
 		}
 
 		if ( isset( $request[ 'exclude_category_quantity_rules' ] ) ) {
 			$variation->update_meta_data( 'variation_minmax_category_group_of_exclude', wc_clean( $request[ 'exclude_category_quantity_rules' ] ) );
-			$variation->save();
-		}
-
-		if ( isset( $request[ 'combine_variations' ] ) ) {
-			throw new WC_REST_Exception( 'woocommerce_rest_invalid_product_type_allow_combinations', __( 'The Allow Combinations option can only be set for Variable Products.', 'woocommerce-min-max-quantities' ) , 400 );
 		}
 
 		return $variation;
@@ -250,9 +304,6 @@ class WC_MMQ_REST_API {
 
 			if ( in_array( 'get', $field_supports ) ) {
 				$args[ 'get_callback' ] = array( __CLASS__, 'get_product_field_value' );
-			}
-			if ( in_array( 'update', $field_supports ) ) {
-				$args[ 'update_callback' ] = array( __CLASS__, 'update_product_field_value' );
 			}
 
 			register_rest_field( 'product', $field_name, $args );
@@ -338,106 +389,136 @@ class WC_MMQ_REST_API {
 	}
 
 	/**
-	 * Updates values for MMQ product fields.
+	 * Validates and sets product fields based on PUT/POST REST API requests.
 	 *
-	 * @param  mixed   $value
-	 * @param  mixed   $response
-	 * @param  string  $field_name
-	 * @return boolean
+	 * @since  4.3.2
+	 *
+	 * @param  WC_Product        $product
+	 * @param  WP_REST_Request   $request
+	 *
 	 */
-	public static function update_product_field_value( $field_value, $response, $field_name ) {
+	public static function handle_product_update( $product, $request ) {
 
-		$product_id = false;
-
-		if ( $response instanceof WP_Post ) {
-			$product_id   = absint( $response->ID );
-			$product      = wc_get_product( $product_id );
-			$product_type = $product->get_type();
-		} elseif ( $response instanceof WC_Product ) {
-			$product_id   = $response->get_id();
-			$product      = $response;
-			$product_type = $response->get_type();
+		if ( ! is_a( $product, 'WC_Product' ) ) {
+			return $product;
 		}
 
-		// Only possible to set fields of 'bundle' type products.
-		if ( $product_id ) {
+		self::rest_validate_product_quantity_rules($product, $request );
 
-			// Set group of value.
-			if ( 'group_of_quantity' === $field_name ) {
+		return self::rest_set_product_fields( $product, $request );
+	}
 
-				$product->update_meta_data( 'group_of_quantity', (int) wc_clean( $field_value ) );
-				$product->save();
+	/**
+	 * Updates product meta data based on quantity rules from REST request.
+	 *
+	 * @since  4.3.2
+	 *
+	 * @param  WC_Product        $product
+	 * @param  WP_REST_Request   $request
+	 *
+	 */
+	public static function rest_set_product_fields( $product, $request ) {
 
-				// Increments the transient version to invalidate cache.
-				WC_Cache_Helper::get_transient_version( 'wc_min_max_group_quantity', true );
+		// Set group of value.
+		if ( isset( $request[ 'group_of_quantity' ] ) ) {
+			$product->update_meta_data( 'group_of_quantity', (int) wc_clean( $request[ 'group_of_quantity' ] ) );
 
-			// Set minimum quantity.
-			} elseif ( 'min_quantity' === $field_name ) {
+			// Increments the transient version to invalidate cache.
+			WC_Cache_Helper::get_transient_version( 'wc_min_max_group_quantity', true );
+		}
 
-				$mmq_instance  = WC_Min_Max_Quantities::get_instance();
-				$group_of_rule = $product->get_meta( 'group_of_quantity', true ) ? $product->get_meta( 'group_of_quantity', true ) : $mmq_instance->get_group_of_quantity_for_product( $product );
-				$max_quantity  = $product->get_meta( 'maximum_allowed_quantity', true );
-				$min_quantity  = (int) wc_clean( $field_value );
+		// Set minimum quantity.
+		if ( isset( $request[ 'min_quantity' ] ) ) {
+			$product->update_meta_data( 'minimum_allowed_quantity', (int) wc_clean( $request[ 'min_quantity' ] ) );
+		}
 
-				if ( '' !== $max_quantity && $max_quantity < $min_quantity ) {
-					/* translators: Minimum quantity */
-					throw new WC_REST_Exception( 'woocommerce_rest_invalid_max_quantity', sprintf( __( 'The minimum quantity must be less than %d, which is the Maximum Quantity.', 'woocommerce-min-max-quantities' ), $max_quantity ), 400 );
-				}
+		// Set maximum quantity.
+		if ( isset( $request[ 'max_quantity' ] ) ) {
+			$product->update_meta_data( 'maximum_allowed_quantity', wc_clean( $request[ 'max_quantity' ] ) );
+		}
 
-				if ( $group_of_rule && ( ( 0 !== $min_quantity % $group_of_rule ) || 0 === $min_quantity ) ) {
-					/* translators: Group of quantity */
-					throw new WC_REST_Exception( 'woocommerce_rest_invalid_min_quantity', sprintf( __( 'The minimum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
-				}
+		// Set Exclude from > Order rules.
+		if ( isset( $request[ 'exclude_order_quantity_value_rules' ] ) ) {
+			$product->update_meta_data( 'minmax_cart_exclude', wc_clean( $request[ 'exclude_order_quantity_value_rules' ] ) );
+		}
 
-				$product->update_meta_data( 'minimum_allowed_quantity', $min_quantity );
-				$product->save();
+		// Set Exclude from > Category rules.
+		if ( isset( $request[ 'exclude_category_quantity_rules' ] ) ) {
+			$product->update_meta_data( 'minmax_category_group_of_exclude', wc_clean( $request[ 'exclude_category_quantity_rules' ] ) );
+		}
 
-			// Set maximum quantity.
-			} elseif ( 'max_quantity' === $field_name ) {
+		// Set Exclude from > Category rules.
+		if (  isset( $request[ 'combine_variations' ] ) ) {
+			$product->update_meta_data( 'allow_combination', wc_clean( $request[ 'combine_variations' ] ) );
+		}
 
-				$mmq_instance  = WC_Min_Max_Quantities::get_instance();
-				$group_of_rule = $product->get_meta( 'group_of_quantity', true ) ? $product->get_meta( 'group_of_quantity', true ) : $mmq_instance->get_group_of_quantity_for_product( $product );
-				$min_quantity  = $product->get_meta( 'minimum_allowed_quantity', true );
-				$max_quantity  = wc_clean( $field_value );
+		return $product;
+	}
 
-				if ( $min_quantity && $max_quantity && $max_quantity < $min_quantity ) {
-					/* translators: Minimum quantity */
-					throw new WC_REST_Exception( 'woocommerce_rest_invalid_max_quantity', sprintf( __( 'The maximum quantity must be greater than %d, which is the Minimum Quantity.', 'woocommerce-min-max-quantities' ), $min_quantity ), 400 );
-				}
+	/**
+	 * Validates quantity rules in REST API PUT/POST requests.
+	 *
+	 * @since  4.3.2
+	 *
+	 * @throws WC_REST_Exception When invalid quantity rules.
+ *
+	 * @param  WC_Product        $product
+	 * @param  WP_REST_Request   $request
+	 *
+	 */
+	public static function rest_validate_product_quantity_rules( $product, $request ) {
 
-				if ( $group_of_rule && '' !== $max_quantity && ( 0 !== $max_quantity % $group_of_rule ) ) {
-					/* translators: Group of quantity */
-					throw new WC_REST_Exception( 'woocommerce_rest_invalid_max_quantity', sprintf( __( 'The maximum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
-				}
+		// Check if no validation is needed.
+		if ( ! isset( $request[ 'group_of_quantity' ] ) &&
+			 ! isset( $request[ 'min_quantity' ] ) &&
+		     ! isset( $request[ 'max_quantity' ] ) &&
+		     ! isset( $request[ 'combine_variations' ] )
+		) {
+			return $product;
+		}
 
-				$product->update_meta_data( 'maximum_allowed_quantity', wc_clean( $field_value ) );
-				$product->save();
-
-			// Set Exclude from > Order rules.
-			} elseif ( 'exclude_order_quantity_value_rules' === $field_name ) {
-
-				$product->update_meta_data( 'minmax_cart_exclude', wc_clean( $field_value ) );
-				$product->save();
-
-			// Set Exclude from > Category rules.
-			} elseif ( 'exclude_category_quantity_rules' === $field_name ) {
-
-				$product->update_meta_data( 'minmax_category_group_of_exclude', wc_clean( $field_value ) );
-				$product->save();
-
-			// Set Exclude from > Category rules.
-			} elseif ( 'combine_variations' === $field_name ) {
-
-				if ( 'variable' !== $product_type ) {
-					throw new WC_REST_Exception( 'woocommerce_rest_invalid_product_type_allow_combinations', __( 'The Allow Combinations option can only be set for Variable Products.', 'woocommerce-min-max-quantities' ) , 400 );
-				}
-
-				$product->update_meta_data( 'allow_combination', wc_clean( $field_value ) );
-				$product->save();
+		// Validate product props.
+		if ( isset( $request[ 'combine_variations' ] ) ) {
+			if ( ! $product->is_type( 'variable' ) ) {
+				throw new WC_REST_Exception( 'woocommerce_rest_invalid_product_type_allow_combinations', __( 'The Allow Combinations option can only be set for Variable Products.', 'woocommerce-min-max-quantities' ) , 400 );
 			}
 		}
 
-		return true;
+		if ( isset( $request[ 'min_quantity' ] ) ) {
+			$min_quantity = (int) $request[ 'min_quantity' ];
+		} else {
+			$min_quantity = '' !== $product->get_meta( 'minimum_allowed_quantity' ) ? (int) $product->get_meta( 'minimum_allowed_quantity' ) : '';
+		}
+
+		if ( isset( $request[ 'group_of_quantity' ] ) ) {
+			$group_of_rule = (int) $request[ 'group_of_quantity' ];
+		} else {
+			$mmq_instance  = WC_Min_Max_Quantities::get_instance();
+			$group_of_rule = $mmq_instance->get_group_of_quantity_for_product( $product );
+		}
+
+		if ( isset( $request[ 'max_quantity' ] ) ) {
+			$max_quantity = $request[ 'max_quantity' ];
+		} else {
+			$max_quantity = $product->get_meta( 'maximum_allowed_quantity' );
+		}
+
+		$max_quantity = $max_quantity ? (int) $max_quantity : '';
+
+		if ( '' !== $max_quantity && '' !== $min_quantity && $max_quantity < $min_quantity ) {
+			/* translators: Minimum quantity */
+			throw new WC_REST_Exception( 'woocommerce_rest_invalid_min_quantity', sprintf( __( 'The minimum quantity must be less than %d, which is the Maximum Quantity.', 'woocommerce-min-max-quantities' ), $max_quantity ), 400 );
+		}
+
+		if ( $group_of_rule && '' !== $min_quantity && ( ( 0 !== $min_quantity % $group_of_rule ) || 0 === $min_quantity ) ) {
+			/* translators: Group of quantity */
+			throw new WC_REST_Exception( 'woocommerce_rest_invalid_min_quantity', sprintf( __( 'The minimum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
+		}
+
+		if ( $group_of_rule && '' !== $max_quantity && ( 0 !== $max_quantity % $group_of_rule ) ) {
+			/* translators: Group of quantity */
+			throw new WC_REST_Exception( 'woocommerce_rest_invalid_max_quantity', sprintf( __( 'The maximum quantity must be a multiple of %d.', 'woocommerce-min-max-quantities' ), $group_of_rule ), 400 );
+		}
 	}
 
 	/**
@@ -452,7 +533,6 @@ class WC_MMQ_REST_API {
 	private static function get_product_field( $key, $product ) {
 
 		$product_type = $product->get_type();
-		$product_id   = $product->get_id();
 
 		switch ( $key ) {
 
@@ -463,6 +543,11 @@ class WC_MMQ_REST_API {
 						$value = (int) $product->get_meta( 'variation_group_of_quantity', true );
 					} else {
 						$parent_product = wc_get_product( $product->get_parent_id() );
+
+						if ( ! is_a( $parent_product, 'WC_Product' ) ) {
+							return '';
+						}
+
 						$mmq_instance   = WC_Min_Max_Quantities::get_instance();
 						$value          = $mmq_instance->get_group_of_quantity_for_product( $parent_product );
 					}

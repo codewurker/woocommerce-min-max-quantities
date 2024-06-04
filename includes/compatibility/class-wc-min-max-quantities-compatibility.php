@@ -4,6 +4,7 @@
  *
  * @package  Woo Min/Max Quantities
  * @since    4.0.4
+ * @version  4.3.2
  */
 
 // Exit if accessed directly.
@@ -81,8 +82,9 @@ class WC_MMQ_Compatibility {
 
 		// Define dependencies.
 		$this->required = array(
-			'pao'    => '3.0.14',
-			'blocks' => '7.2.0'
+			'pao'       => '3.0.14',
+			'blocks'    => '7.2.0',
+			'wc_stripe' => '4.1.0' // when wc_stripe_hide_payment_request_on_product_page filter was made usable.
 		);
 
 		// Initialize.
@@ -123,6 +125,8 @@ class WC_MMQ_Compatibility {
 
 	/**
 	 * Load compatibility classes.
+	 * 
+	 * @version 4.3.2
 	 *
 	 * @return void
 	 */
@@ -138,6 +142,21 @@ class WC_MMQ_Compatibility {
 		// Addons support.
 		if ( class_exists( 'WC_Product_Addons' ) && defined( 'WC_PRODUCT_ADDONS_VERSION' ) && version_compare( WC_PRODUCT_ADDONS_VERSION, $this->required[ 'pao' ] ) >= 0 ) {
 			$module_paths[ 'product_addons' ] = WC_MMQ_ABSPATH . 'includes/compatibility/modules/class-wc-min-max-quantities-addons.php';
+		}
+
+		// Smart button on Product page: PayPal compatibility.
+		if ( class_exists( '\WooCommerce\PayPalCommerce\PluginModule' ) ) {
+			$module_paths[ 'paypal' ] = WC_MMQ_ABSPATH . '/includes/compatibility/modules/class-wc-min-max-quantities-paypal-compatibility.php';
+		}
+
+		// Express checkout on Product page: Stripe compatibility.
+		if ( class_exists( 'WC_Stripe' ) && defined( 'WC_STRIPE_VERSION' ) && version_compare( WC_STRIPE_VERSION, $this->required[ 'wc_stripe' ] ) >= 0 ) {
+			$module_paths[ 'wc_stripe' ] = WC_MMQ_ABSPATH . '/includes/compatibility/modules/class-wc-min-max-quantities-stripe-compatibility.php';
+		}
+
+		// Express checkout on Product page: WooPayments compatibility.
+		if ( class_exists( 'WC_Payments' ) ) {
+			$module_paths[ 'wcpay' ] = WC_MMQ_ABSPATH . '/includes/compatibility/modules/class-wc-min-max-quantities-wc-payments-compatibility.php';
 		}
 
 		/**
