@@ -2,14 +2,14 @@
 # This file is distributed under the GNU General Public License v3.0.
 msgid ""
 msgstr ""
-"Project-Id-Version: Woo Min/Max Quantities 4.3.2\n"
+"Project-Id-Version: Woo Min/Max Quantities 5.0.0\n"
 "Report-Msgid-Bugs-To: https://woocommerce.com/my-account/create-a-ticket/\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2024-06-04T09:20:25+00:00\n"
+"POT-Creation-Date: 2024-07-30T07:54:56+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.10.0\n"
 "language-team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -365,106 +365,105 @@ msgstr ""
 msgid "Foul!"
 msgstr ""
 
-#. translators: Minimum required WooCommerce version
-#: woocommerce-min-max-quantities.php:271
+#: woocommerce-min-max-quantities.php:275
 msgid "<strong>Min/Max Quantities</strong> requires at least WooCommerce <strong>%s</strong>."
 msgstr ""
 
 #. translators: Minimum required PHP version
-#: woocommerce-min-max-quantities.php:286
+#: woocommerce-min-max-quantities.php:295
 msgid "Woo Min/Max Quantities requires at least PHP <strong>%1$s</strong>. Learn <a href=\"%2$s\">how to update PHP</a>."
 msgstr ""
 
-#: woocommerce-min-max-quantities.php:736
+#: woocommerce-min-max-quantities.php:745
 msgid "excludes "
 msgstr ""
 
 #. translators: %d: Minimum amount of items in the cart
-#: woocommerce-min-max-quantities.php:741
+#: woocommerce-min-max-quantities.php:750
 msgid "To place an order, your cart must contain at least %d items."
 msgstr ""
 
 #. translators: %d: Maximum amount of items in the cart
-#: woocommerce-min-max-quantities.php:747
+#: woocommerce-min-max-quantities.php:756
 msgid "Your cart must not contain more than %d items to place an order."
 msgstr ""
 
 #. translators: %s: Minimum order value
-#: woocommerce-min-max-quantities.php:756
+#: woocommerce-min-max-quantities.php:765
 msgid "To place an order, your cart total must be at least %s."
 msgstr ""
 
 #. translators: %s: Maximum order value
-#: woocommerce-min-max-quantities.php:763
+#: woocommerce-min-max-quantities.php:772
 msgid "Your cart total must not be higher than %s to place an order."
 msgstr ""
 
 #. translators: %1$s: Category name, %2$s: Comma separated list of product names, %3$d: Group amount
-#: woocommerce-min-max-quantities.php:793
+#: woocommerce-min-max-quantities.php:802
 msgid "Products in the <strong>%1$s</strong> category (<em>%2$s</em>) must be bought in multiples of %3$d."
 msgstr ""
 
-#: woocommerce-min-max-quantities.php:846
+#: woocommerce-min-max-quantities.php:855
 msgid "Available on backorder"
 msgstr ""
 
-#: woocommerce-min-max-quantities.php:851
+#: woocommerce-min-max-quantities.php:860
 msgid "Out of stock"
 msgstr ""
 
 #. translators: %1$s: Product name, %2$s: Minimum order quantity, %3$s: Total cart quantity
-#: woocommerce-min-max-quantities.php:895
+#: woocommerce-min-max-quantities.php:909
 msgid "To place an order, the quantity of \"%1$s\" must be at least %2$s. You currently have %3$s in your cart."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$s: Minimum order quantity
-#: woocommerce-min-max-quantities.php:903
+#: woocommerce-min-max-quantities.php:917
 msgid "The quantity of \"%1$s\" has been increased to %2$s. This is the minimum required quantity."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$s: Minimum order quantity
-#: woocommerce-min-max-quantities.php:906
+#: woocommerce-min-max-quantities.php:920
 msgid "To place an order, the quantity of \"%1$s\" must be at least %2$s."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$s: Maximum order quantity, %3$s: Total cart quantity
-#: woocommerce-min-max-quantities.php:916
+#: woocommerce-min-max-quantities.php:930
 msgid "The quantity of \"%1$s\" cannot be higher than %2$s to place an order. You currently have %3$s in your cart."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$s: Maximum order quantity
-#: woocommerce-min-max-quantities.php:924
+#: woocommerce-min-max-quantities.php:938
 msgid "The quantity of \"%1$s\" has been decreased to %2$s. This is the maximum allowed quantity."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$s: Maximum order quantity
-#: woocommerce-min-max-quantities.php:927
+#: woocommerce-min-max-quantities.php:941
 msgid "The quantity of \"%1$s\" cannot be higher than %2$s to place an order."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$d: Group amount
-#: woocommerce-min-max-quantities.php:939
-#: woocommerce-min-max-quantities.php:950
+#: woocommerce-min-max-quantities.php:953
+#: woocommerce-min-max-quantities.php:964
 msgid "\"%1$s\" must be bought in multiples of %2$d. Please adjust its quantity to continue."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$d: Group amount
-#: woocommerce-min-max-quantities.php:947
+#: woocommerce-min-max-quantities.php:961
 msgid "The quantity of \"%1$s\" has been adjusted. \"%1$s\" must be bought in multiples of %2$d."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$d: Group of quantity
-#: woocommerce-min-max-quantities.php:1048
+#: woocommerce-min-max-quantities.php:1062
 msgid "\"%1$s\" can only be bought in multiples of %2$d."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$d: Minimum Quantity
-#: woocommerce-min-max-quantities.php:1069
+#: woocommerce-min-max-quantities.php:1083
 msgid "The minimum required quantity for \"%1$s\" is %2$d."
 msgstr ""
 
 #. translators: %1$s: Product name, %2$d: Maximum quantity
-#: woocommerce-min-max-quantities.php:1092
+#: woocommerce-min-max-quantities.php:1106
 msgid "The maximum allowed quantity for \"%1$s\" is %2$d."
 msgstr ""
 

@@ -3,13 +3,17 @@
  * Plugin Name: Woo Min/Max Quantities
  * Plugin URI: https://woocommerce.com/products/minmax-quantities/
  * Description: Define minimum/maximum allowed quantities for products, variations and orders.
- * Version: 4.3.2
+ * Version: 5.0.0
  * Author: Woo
  * Author URI: https://woocommerce.com
- * Requires at least: 4.4
- * Tested up to: 6.5
- * WC tested up to: 8.9
- * WC requires at least: 3.9.0
+ *
+ * Requires PHP: 7.4
+ *
+ * Requires at least: 6.2
+ * Tested up to: 6.6
+ *
+ * WC tested up to: 9.1
+ * WC requires at least: 8.2
  *
  * Requires Plugins: woocommerce
  *
@@ -26,7 +30,7 @@
 
 if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 
-	define( 'WC_MIN_MAX_QUANTITIES', '4.3.2' ); // WRCS: DEFINED_VERSION.
+	define( 'WC_MIN_MAX_QUANTITIES', '5.0.0' ); // WRCS: DEFINED_VERSION.
 
 	/**
 	 * Min Max Quantities class.
@@ -38,7 +42,7 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 		 *
 		 * @var string
 		 */
-		public $min_wc_version = '3.9.0';
+		public $min_wc_version = '8.2.0';
 
 		/**
 		 * Minimum order quantity.
@@ -113,12 +117,10 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 
 			if ( ! function_exists( 'WC' ) || version_compare( WC()->version, $this->min_wc_version ) < 0 ) {
 				add_action( 'admin_notices', array( $this, 'woocommerce_required_notice' ) );
-				return;
 			}
 
-			if ( ! function_exists( 'phpversion' ) || version_compare( phpversion(), '7.0.0', '<' ) ) {
+			if ( ! function_exists( 'phpversion' ) || version_compare( phpversion(), '7.4.0', '<' ) ) {
 				add_action( 'admin_notices', array( $this, 'php_version_notice' ) );
-				return;
 			}
 
 			$this->maybe_define_constant( 'WC_MMQ_ABSPATH', trailingslashit( plugin_dir_path( __FILE__ ) ) );
@@ -268,7 +270,14 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 				<p>
 					<?php
 					/* translators: Minimum required WooCommerce version */
-					echo wp_kses_post( sprintf( __( '<strong>Min/Max Quantities</strong> requires at least WooCommerce <strong>%s</strong>.', 'woocommerce-min-max-quantities' ), esc_html( $this->min_wc_version ) ) );
+					echo wp_kses_post(
+						sprintf(
+							__(
+								'<strong>Min/Max Quantities</strong> requires at least WooCommerce <strong>%s</strong>.',
+								'woocommerce-min-max-quantities' ),
+							esc_html( $this->min_wc_version )
+						)
+					);
 					?>
 				</p>
 			</div><?php
@@ -283,7 +292,7 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 			<p>
 				<?php
 				/* translators: Minimum required PHP version */
-				echo wp_kses_post( sprintf( __( 'Woo Min/Max Quantities requires at least PHP <strong>%1$s</strong>. Learn <a href="%2$s">how to update PHP</a>.', 'woocommerce-min-max-quantities' ), '7.0.0', 'https://woocommerce.com/document/how-to-update-your-php-version/' ) );
+				echo wp_kses_post( sprintf( __( 'Woo Min/Max Quantities requires at least PHP <strong>%1$s</strong>. Learn <a href="%2$s">how to update PHP</a>.', 'woocommerce-min-max-quantities' ), '7.4.0', 'https://woocommerce.com/document/how-to-update-your-php-version/' ) );
 				?>
 			</p>
 			</div><?php
@@ -883,7 +892,12 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 				$allow_combination = 'yes' === get_post_meta( $parent_id, 'allow_combination', true );
 
 				if ( $allow_combination ) {
-					$parent_product  = wc_get_product( $parent_id );
+					$parent_product = wc_get_product( $parent_id );
+
+					if ( ! is_a( $parent_product, 'WC_Product' ) ) {
+						return;
+					}
+
 					$variation_title = $parent_product->get_title();
 				}
 
@@ -1398,7 +1412,7 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 		 * Get group_of_quantity setting for a product.
 		 *
 		 * @param WC_Product $product Product object.
-		 * 
+		 *
 		 * Doesn't handle variations on variable products.
 		 *
 		 * @return int
@@ -1578,7 +1592,7 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 
 		/**
 		 * Check if the product always conforms to MMQ rules.
-		 * 
+		 *
 		 * That is, there are either no rules set, or the min/max rules are set and equal.
 		 *
 		 * @param WC_Product $product Product object.
@@ -1586,7 +1600,7 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 		 * @return bool
 		 */
 		private function can_skip_product_rules_validation( $product ) {
-			
+
 			if ( ! $product ) {
 				return false;
 			}
@@ -1611,13 +1625,13 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 
 		/**
 		 * Check if the variable product supports express checkout.
-		 * 
+		 *
 		 * Simplified version that is a bit lighter on resources: If there are any variations with min/max rules enabled, return false.
 		 * Variations can have different prices, too. But that's handled outside of this plugin.
 
-		 * 
+		 *
 		 * @param WC_Product $product Product object.
-		 * 
+		 *
 		 * @return bool
 		 */
 		private function variable_product_supports_express_checkout( $product ) {
@@ -1627,13 +1641,13 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 			}
 
 			if ( ! in_array( $product->get_type(), array( 'variable', 'variable-subscription' ), true ) ) {
-				// This is counterintuitive, but if a non-variable product is passed, 
+				// This is counterintuitive, but if a non-variable product is passed,
 				// we shouldn't forbid the express checkout button here.
 				return true;
 			}
 
 			$combine_variations = $product->get_meta( 'allow_combination', true );
-			
+
 			if ( 'yes' === $combine_variations ) {
 				/* If Combine variations is set to true, there are no rules on the variations.
 					But if min == max on the variable product with combined variations, qty is not set automatically.
@@ -1662,17 +1676,17 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 
 		/**
 		 * Check if global rules apply to a product.
-		 * 
+		 *
 		 * That is, if there are any global rules set, and the product is not excluded from them.
-		 * 
+		 *
 		 * Exclusion from group of rules applied through categories is done in can_skip_product_rules_validation(),
 		 * as get_group_of_quantity_for_product returns 0 if the rule is set, but the product is excluded.
-		 * 
+		 *
 		 * @since 4.3.2
 		 * @version 4.3.2
-		 * 
+		 *
 		 * @param WC_Product $product Product object.
-		 * 
+		 *
 		 * @return bool
 		 */
 		private function global_rules_apply_to_product( $product ) {
@@ -1705,40 +1719,40 @@ if ( ! class_exists( 'WC_Min_Max_Quantities' ) ) :
 
 		/**
 		 * Check if the express checkout button(s) can be displayed on single product page.
-		 * 
+		 *
 		 * The only thing we can do from PHP is to hide the smart buttons if the min/max quantity or value is set.
 		 * The end customer can increase the quantity and click the express checkout button and only at that point
 		 * we can check if the quantity/value is within the allowed range.
 		 * Since we can't validate this in PHP, we hide the express checkout button.
-		 * 
+		 *
 		 * @since 4.3.2
 		 * @version 4.3.2
-		 * 
+		 *
 		 * @param WC_Product $product Product object.
-		 * 
+		 *
 		 * @return bool
 		 */
 		public function can_display_express_checkout( $product ) {
 
-			/* If global MMQ rules apply to the product, 
+			/* If global MMQ rules apply to the product,
 			   we can't verify the quantity/value in PHP, so we can't display the express checkout button. */
 			if ( $this->global_rules_apply_to_product( $product ) ) {
 				return false;
 			}
 
-			/* If the product has rules that need to be validated, 
+			/* If the product has rules that need to be validated,
 			   (and we can't verify the quantity in PHP), we can't display the express checkout button. */
 			if ( ! $this->can_skip_product_rules_validation( $product ) ) {
 				return false;
 			}
 
-			/* If the product is a variable product and there are variations with min/max rules, 
+			/* If the product is a variable product and there are variations with min/max rules,
 			   we can't verify the quantity in PHP, so we can't display the express checkout button.
-			   
+
 			   We can test for variable products after the test for simple products, because all the cases
 			   that are handled incorrectly by product_always_conforms_to_rules() allow this check to run:
 				- if there are no rules on variations, product_always_conforms_to_rules is almost correct for variable products, too.
-				- if there are no rules on variable product, but there are rules on variation 
+				- if there are no rules on variable product, but there are rules on variation
 				    -> product_always_conforms_to_rules will return true, but this will be corrected to false here.
 				- if min == max on the variable product, but there are rules on the variation
 				    -> product_always_conforms_to_rules will return true, but this will be corrected to false here.

@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Add custom REST API fields.
  *
  * @class    WC_MMQ_REST_API
- * @version  4.3.2
+ * @version  5.0.0
  */
 class WC_MMQ_REST_API {
 
@@ -267,7 +267,7 @@ class WC_MMQ_REST_API {
 			),
 			'max_quantity'                       => array(
 				'description' => __( 'Maximum allowed variation quantity.', 'woocommerce-min-max-quantities' ),
-				'type'        => WC_MMQ_Core_Compatibility::is_wp_version_gte( '5.5' ) ? array( 'integer', 'string' ) : '',
+				'type'        => array( 'integer', 'string' ),
 				'context'     => array( 'view', 'edit' )
 			),
 			'exclude_order_quantity_value_rules' => array(
@@ -330,7 +330,7 @@ class WC_MMQ_REST_API {
 			),
 			'max_quantity'                       => array(
 				'description' => __( 'Maximum allowed product quantity.', 'woocommerce-min-max-quantities' ),
-				'type'        => WC_MMQ_Core_Compatibility::is_wp_version_gte( '5.5' ) ? array( 'integer', 'string' ) : '',
+				'type'        => array( 'integer', 'string' ),
 				'context'     => array( 'view', 'edit' )
 			),
 			'exclude_order_quantity_value_rules' => array(
@@ -564,7 +564,12 @@ class WC_MMQ_REST_API {
 						$value = (int) $product->get_meta( 'variation_minimum_allowed_quantity', true );
 					} else {
 						$parent_product = wc_get_product( $product->get_parent_id() );
-						$value          = (int) $parent_product->get_meta( 'minimum_allowed_quantity', true );
+
+						if ( ! is_a( $parent_product, 'WC_Product' ) ) {
+							return 0;
+						}
+
+						$value = (int) $parent_product->get_meta( 'minimum_allowed_quantity', true );
 					}
 				} else {
 					$value = (int) $product->get_meta( 'minimum_allowed_quantity', true );
@@ -578,7 +583,12 @@ class WC_MMQ_REST_API {
 						$max_quantity = $product->get_meta( 'variation_maximum_allowed_quantity', true );
 					} else {
 						$parent_product = wc_get_product( $product->get_parent_id() );
-						$max_quantity   = $parent_product->get_meta( 'maximum_allowed_quantity', true );
+
+						if ( ! is_a( $parent_product, 'WC_Product' ) ) {
+							return '';
+						}
+
+						$max_quantity = $parent_product->get_meta( 'maximum_allowed_quantity', true );
 					}
 				} else {
 					$max_quantity = $product->get_meta( 'maximum_allowed_quantity', true );
@@ -594,7 +604,12 @@ class WC_MMQ_REST_API {
 						$value = $product->get_meta( 'variation_minmax_cart_exclude', true );
 					} else {
 						$parent_product = wc_get_product( $product->get_parent_id() );
-						$value          = $parent_product->get_meta( 'minmax_cart_exclude', true );
+
+						if ( ! is_a( $parent_product, 'WC_Product' ) ) {
+							return 'no';
+						}
+
+						$value = $parent_product->get_meta( 'minmax_cart_exclude', true );
 					}
 				} else {
 					$value = $product->get_meta( 'minmax_cart_exclude', true );
@@ -612,7 +627,12 @@ class WC_MMQ_REST_API {
 						$value = $product->get_meta( 'variation_minmax_category_group_of_exclude', true );
 					} else {
 						$parent_product = wc_get_product( $product->get_parent_id() );
-						$value          = $parent_product->get_meta( 'minmax_category_group_of_exclude', true );
+
+						if ( ! is_a( $parent_product, 'WC_Product' ) ) {
+							return 'no';
+						}
+
+						$value = $parent_product->get_meta( 'minmax_category_group_of_exclude', true );
 					}
 				} else {
 					$value = $product->get_meta( 'minmax_category_group_of_exclude', true );
