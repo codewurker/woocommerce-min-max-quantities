@@ -1,5 +1,8 @@
 *** Woo Min/Max Quantities Changelog ***
 
+2024.07.31 - version 5.0.1
+* Fix - Deactivate plugin for WooCommerce versions prior to 8.2 to avoid fatal errors.
+
 2024.07.30 - version 5.0.0
 * Important - New: PHP 7.4+ is now required.
 * Important - New: WooCommerce 8.2+ is now required.
